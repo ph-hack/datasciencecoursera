@@ -61,4 +61,4 @@ From these methods, the Logistic Model Trees achieved the highest accuracy (~97%
 Conclusions
 ---------------------
 
-Unfortunately it wasn't possible to apply a better descriptor analysis and also to make use of the whole cross-validation process due to the lack of time. However, it was shown that the chosen model produces good results, since it predicted correctly all test samples.
+Unfortunately it wasn't possible to apply a better descriptor analysis and also to make use of the whole cross-validation process due to the lack of time. For this, I would like to apologize. However, it was shown that the chosen model produces good results, since it predicted correctly all test samples. Thanks to the Coursera and the Johns Hopkins for the opportunity given.
