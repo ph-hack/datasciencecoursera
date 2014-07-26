@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=9" >
+
+<title>Practical Machine Learning Course Project Report</title>
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 12px;
+   margin: 8px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 { 
+   font-size:2.2em; 
+}
+
+h2 { 
+   font-size:1.8em; 
+}
+
+h3 { 
+   font-size:1.4em; 
+}
+
+h4 { 
+   font-size:1.0em; 
+}
+
+h5 { 
+   font-size:0.9em; 
+}
+
+h6 { 
+   font-size:0.8em; 
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre {	
+   margin-top: 0;
+   max-width: 95%;
+   border: 1px solid #ccc;
+   white-space: pre-wrap;
+}
+
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code.r, code.cpp {
+   background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * { 
+      background: transparent !important; 
+      color: black !important; 
+      filter:none !important; 
+      -ms-filter: none !important; 
+   }
+
+   body { 
+      font-size:12pt; 
+      max-width:100%; 
+   }
+       
+   a, a:visited { 
+      text-decoration: underline; 
+   }
+
+   hr { 
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote { 
+      padding-right: 1em; 
+      page-break-inside: avoid; 
+   }
+
+   tr, img { 
+      page-break-inside: avoid; 
+   }
+
+   img { 
+      max-width: 100% !important; 
+   }
+
+   @page :left { 
+      margin: 15mm 20mm 15mm 10mm; 
+   }
+     
+   @page :right { 
+      margin: 15mm 10mm 15mm 20mm; 
+   }
+
+   p, h2, h3 { 
+      orphans: 3; widows: 3; 
+   }
+
+   h2, h3 { 
+      page-break-after: avoid; 
+   }
+}
+
+</style>
+
+
+
+
+
+</head>
+
+<body>
+<h1>Practical Machine Learning Course Project Report</h1>
+
+<p>This document is structured as follows: In the first section, it is described the pre-processing and data division; In the second section, some tests with different models are described; By the end, the conclusions.</p>
+
+<h2>Pre-processing</h2>
+
+<p>The available data was extracted using the <code>read.csv</code> function, creating two data frames, one with the labeled data and another with the test set, as follows:</p>
+
+<pre><code># Reads the data from the CSV file
+data &lt;- read.csv(&quot;pml-training.csv&quot;, header = TRUE, sep = &quot;,&quot;)
+testData &lt;- read.csv(&quot;pml-testing.csv&quot;, header = TRUE, sep = &quot;,&quot;)
+</code></pre>
+
+<p>With a quick overview on the training set using the <code>summary</code> function, it was noticed that many variables consisted mostly of &ldquo;invalid&rdquo; values, such as &ldquo;#DIV/0!&rdquo;, NA and &ldquo;&rdquo;. The following script was written to eliminate those variables, more precisely, the ones which contained more than 70% of such values:</p>
+
+<pre><code># Finds the variables with more than 70% null values
+predictors2remove &lt;- c()
+for(i in 1:159){
+
+  divs &lt;- which(sampling[,i] == &quot;#DIV/0!&quot;)
+  if(length(divs) &gt; 0)
+    sampling[divs,i] &lt;- NA
+
+  nos &lt;- which(sampling[,i] == &quot;&quot;)
+  if(length(nos) &gt; 0)
+    sampling[nos,i] &lt;- NA
+
+  NAs &lt;- which(is.na(sampling[,i]))
+  if(length(NAs) &gt; 0.7*500)
+    predictors2remove &lt;- c(predictors2remove, i)
+
+  cat(i*100/159, &quot;%\n&quot;)
+}
+
+# Removes those variables
+newData &lt;- data[,-predictors2remove]
+newTestData &lt;- testData[,-predictors2remove]
+</code></pre>
+
+<p>Furthermore, the first seven variables were also removed due to the first analysis with the <code>summary</code> function. 
+Other pre-processing transformations (standardization and PCA) were applied within the <code>train</code> function. 
+The data set division was made using the <code>createFolds</code> function regarding the <code>classe</code> variable, dividing it into five parts, with which, two training and validation sets were built in the following manner: Let D1, D2, D3, D4 and D5 be the 5 parts dividing the data set; The first training set consisted of the parts D1, D2 and D3 and the first validation set consisted of the D4 and D5 parts; The second training set was built with the D3, D4 and D5 parts, while the second validation set was built with the D1 and D2 parts.</p>
+
+<h2>Tests</h2>
+
+<p>Many different models were tested, applied to the first training and validation sets. They are listed below:</p>
+
+<ul>
+<li>Boosting with Trees (&#39;<code>ada</code>&#39;, &#39;<code>bstTree</code>&#39;);</li>
+<li>Boosting with Logistic Model (&#39;<code>logitBoost</code>&#39;);</li>
+<li>K-Nearest Neighbours (&#39;<code>knn</code>&#39;);</li>
+<li>Linear Discriminant Analys (&#39;<code>lda</code>&#39;, &#39;<code>Linda</code>&#39;);</li>
+<li>Logistic Model Trees (&#39;<code>LMT</code>&#39;);</li>
+<li>Support Vector Machine (&#39;<code>svmRadial</code>&#39;);</li>
+</ul>
+
+<p>From these methods, the Logistic Model Trees achieved the highest accuracy (~97%), as well as the best sensibility and precision. Then, this method was applied to the second training and validation sets, achieving similar results, suggesting that this model would perform well in the out-of-sample case. Then it was chosen to be applied to the test set. The default tunning parameters&#39; values were used to fit the LMT. Pre-processing using the &#39;<code>scale</code>&#39;, &#39;<code>center</code>&#39; and &#39;<code>pca</code>&#39; parameters were tested, but no significant improvement was noticed with the LMT. They were also tested with others models, but none achieved better results than the LMT.</p>
+
+<h2>Conclusions</h2>
+
+<p>Unfortunately it wasn&#39;t possible to apply a better descriptor analysis and also to make use of the whole cross-validation process due to the lack of time. However, it was shown that the chosen model produces good results, since it predicted correctly all test samples.</p>
+
+</body>
+
+</html>
+
